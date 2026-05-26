@@ -42,25 +42,56 @@ function convertLetterToNumber(str) {
 function initialize() {
 	document.getElementById('gtable-header-div').style.display = "block";
 	document.getElementById('gtable-div').innerHTML = "";
-	//document.getElementById("category-show-all-button").onclick=function(){initialgraph = true; drawTable("All Categories", null);};
+
 	gtitle = document.getElementById('gtable-title').innerHTML;
 	gdefaultCategory = document.getElementById('gtable-filter').innerHTML;
 	gdColumns.Gas1name = document.getElementById('gtable-column1').innerHTML;
 	gdColumns.Gas2name = document.getElementById('gtable-column2').innerHTML;
+
 	ghaxis.title = document.getElementById('gtable-hAxis').innerHTML;
 	ghaxis.units = document.getElementById('gtable-hAxisUnits').innerHTML;
 	ghaxis.format = document.getElementById('gtable-hAxisFormat').innerHTML;
-	
-	var srcstring = document.getElementById('google-source').innerHTML;
-	var srcstart = srcstring.indexOf('ccc?key=') + 8;
-	if (srcstart != -1) {
-		var srcend = srcstring.indexOf('"',srcstart);
-		if (srcend != -1) {
-			var query = new google.visualization.Query('https://docs.google.com/spreadsheet/tq?&key=' + srcstring.substring(srcstart,srcend).replace('#','&') + '&headers=2');
-			query.setQuery('ORDER BY A OFFSET 1');
-			query.send(drawChartArray);
+
+	var csvUrl = document
+		.getElementById('google-source')
+		.getAttribute('data-csv-url');
+
+	Papa.parse(csvUrl, {
+		download: true,
+		header: true,
+		dynamicTyping: true,
+		complete: function(results) {
+
+			var data = new google.visualization.DataTable();
+
+			var headers = Object.keys(results.data[0]);
+
+			headers.forEach(function(header) {
+				var sample = results.data.find(r => r[header] !== "");
+				var type = (sample && typeof sample[header] === "number")
+					? "number"
+					: "string";
+
+				data.addColumn(type, header);
+			});
+
+			results.data.forEach(function(row) {
+
+				if (!row || Object.keys(row).length === 0) return;
+
+				var rowArray = headers.map(function(h) {
+					return row[h];
+				});
+
+				data.addRow(rowArray);
+			});
+
+			drawChartArray({
+				isError: function() { return false; },
+				getDataTable: function() { return data; }
+			});
 		}
-	}
+	});
 }
 
 
