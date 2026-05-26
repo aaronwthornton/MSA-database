@@ -75,16 +75,28 @@ function initialize() {
 				data.addColumn(type, header);
 			});
 
-			results.data.forEach(function(row) {
+results.data.forEach(function(row) {
+  if (!row || Object.keys(row).length === 0) return;
 
-				if (!row || Object.keys(row).length === 0) return;
+  var rowArray = headers.map(function(h, i) {
+    var value = row[h];
 
-				var rowArray = headers.map(function(h) {
-					return row[h];
-				});
+    if (value === "" || value === undefined) {
+      return null;
+    }
 
-				data.addRow(rowArray);
-			});
+    var columnType = data.getColumnType(i);
+
+    if (columnType === "number") {
+      var num = Number(value);
+      return isNaN(num) ? null : num;
+    }
+
+    return String(value);
+  });
+
+  data.addRow(rowArray);
+});
 
 			drawChartArray({
 				isError: function() { return false; },
