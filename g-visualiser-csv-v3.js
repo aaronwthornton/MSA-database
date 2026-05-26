@@ -58,46 +58,60 @@ function initialize() {
 
 Papa.parse(csvUrl, {
   download: true,
-  header: true,
+  header: false,
   dynamicTyping: false,
   skipEmptyLines: true,
 
-  complete: function(results) {
-    var data = new google.visualization.DataTable();
-    var headers = Object.keys(results.data[0]);
+complete: function(results) {
+  var data = new google.visualization.DataTable();
+  var rows = results.data;
 
-    headers.forEach(function(header) {
-      if (header.indexOf("Data:") !== -1) {
-        data.addColumn("number", header);
-      } else {
-        data.addColumn("string", header);
+  var headerRow1 = rows[0];
+  var headerRow2 = rows[1];
+
+  var headers = headerRow1.map(function(h, i) {
+    var top = h ? String(h).trim() : "";
+    var bottom = headerRow2[i] ? String(headerRow2[i]).trim() : "";
+
+    if (top && bottom) {
+      return top + " " + bottom;
+    }
+
+    return top || bottom;
+  });
+
+  headers.forEach(function(header) {
+    if (header.indexOf("Data:") !== -1) {
+      data.addColumn("number", header);
+    } else {
+      data.addColumn("string", header);
+    }
+  });
+
+  rows.slice(2).forEach(function(row) {
+    var rowArray = headers.map(function(h, i) {
+      var value = row[i];
+
+      if (value === "" || value === undefined || value === null) {
+        return null;
       }
+
+      if (data.getColumnType(i) === "number") {
+        var num = Number(value);
+        return isNaN(num) ? null : num;
+      }
+
+      return String(value);
     });
 
-    results.data.forEach(function(row) {
-      var rowArray = headers.map(function(h, i) {
-        var value = row[h];
+    data.addRow(rowArray);
+  });
 
-        if (value === "" || value === undefined || value === null) {
-          return null;
-        }
-
-        if (data.getColumnType(i) === "number") {
-          var num = Number(value);
-          return isNaN(num) ? null : num;
-        }
-
-        return String(value);
-      });
-
-      data.addRow(rowArray);
-    });
-
-    drawChartArray({
-      isError: function() { return false; },
-      getDataTable: function() { return data; }
-    });
-  }
+  drawChartArray({
+    isError: function() { return false; },
+    getDataTable: function() { return data; }
+  });
+}
 });
 
 // closes initialize()
