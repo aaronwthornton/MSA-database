@@ -56,56 +56,49 @@ function initialize() {
 		.getElementById('google-source')
 		.getAttribute('data-csv-url');
 
-	Papa.parse(csvUrl, {
-		download: true,
-		header: true,
-		dynamicTyping: true,
-		complete: function(results) {
+Papa.parse(csvUrl, {
+  download: true,
+  header: true,
+  dynamicTyping: false,
+  skipEmptyLines: true,
 
-			var data = new google.visualization.DataTable();
+  complete: function(results) {
+    var data = new google.visualization.DataTable();
+    var headers = Object.keys(results.data[0]);
 
-			var headers = Object.keys(results.data[0]);
+    headers.forEach(function(header) {
+      if (header.indexOf("Data:") !== -1) {
+        data.addColumn("number", header);
+      } else {
+        data.addColumn("string", header);
+      }
+    });
 
-			headers.forEach(function(header) {
-				var sample = results.data.find(r => r[header] !== "");
-				var type = (sample && typeof sample[header] === "number")
-					? "number"
-					: "string";
+    results.data.forEach(function(row) {
+      var rowArray = headers.map(function(h, i) {
+        var value = row[h];
 
-				data.addColumn(type, header);
-			});
+        if (value === "" || value === undefined || value === null) {
+          return null;
+        }
 
-results.data.forEach(function(row) {
-  if (!row || Object.keys(row).length === 0) return;
+        if (data.getColumnType(i) === "number") {
+          var num = Number(value);
+          return isNaN(num) ? null : num;
+        }
 
-  var rowArray = headers.map(function(h, i) {
-    var value = row[h];
+        return String(value);
+      });
 
-    if (value === "" || value === undefined) {
-      return null;
-    }
+      data.addRow(rowArray);
+    });
 
-    var columnType = data.getColumnType(i);
-
-    if (columnType === "number") {
-      var num = Number(value);
-      return isNaN(num) ? null : num;
-    }
-
-    return String(value);
-  });
-
-  data.addRow(rowArray);
+    drawChartArray({
+      isError: function() { return false; },
+      getDataTable: function() { return data; }
+    });
+  }
 });
-
-			drawChartArray({
-				isError: function() { return false; },
-				getDataTable: function() { return data; }
-			});
-		}
-	});
-}
-
 
 function updateTable(forced) {
 	forced = forced || false;
