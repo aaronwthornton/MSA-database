@@ -100,6 +100,9 @@ Papa.parse(csvUrl, {
   }
 });
 
+// closes initialize()
+}
+
 function updateTable(forced) {
 	forced = forced || false;
 	
